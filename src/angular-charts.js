@@ -96,7 +96,9 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
       lineCurveType: 'cardinal',
       isAnimate: true,
       yAxisTickFormat: 's',
-      waitForHeightAndWidth: false
+      waitForHeightAndWidth: false,
+      yAxisFixedScale: {},
+      yAxisOrientation: "left"
     };
 
     prepareConfig();
@@ -127,6 +129,7 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
       if (!validateHeightAndWidth()) {
           return;
       }
+      prepareConfig();
       prepareData();
       setHeightWidth();
       setContainers();
@@ -220,7 +223,7 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
         'bar': barChart,
         'line': lineChart,
         'area': areaChart,
-        'point': pointChart,
+        'point': pointChart
       };
       return charts[type];
     }
@@ -236,6 +239,45 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
           return (i % mod) === 0;
         }));
       }
+    }
+
+    /**
+     * Sets y axis scale. Using fixed scale if specified in config.
+     */
+    function setYAxisScale(y, yData) {
+      var scale = config.yAxisFixedScale;
+      if (angular.isUndefined(scale) || angular.isUndefined(scale.min)
+        || angular.isUndefined(scale.max)) {
+        var padding = d3.max(yData) * 0.2;
+        y.domain([
+          d3.min(yData),
+          d3.max(yData) + padding
+        ]);
+      } else {
+        y.domain([scale.min, scale.max]);
+      }
+    }
+
+    function createSvg(margin, yAxisOrient) {
+      return d3.select(chartContainer[0]).append("svg")
+        .attr("width", width + margin.left + margin.right)
+        .attr("height", height + margin.top + margin.bottom)
+        .append("g")
+        .attr("transform", "translate(" + (yAxisOrient === "right" ? margin.right : margin.left) + "," + margin.top + ")");
+    }
+
+    function appendXAxis(svg, xAxis) {
+      svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
+    }
+
+    function appendYAxis(svg, yAxis) {
+      svg.append("g")
+        .attr("class", "y axis")
+        .attr("transform", "translate(" + (yAxis.orient() === "right" ? width : 0) + ",0)")
+        .call(yAxis);
     }
 
     /**
@@ -288,9 +330,7 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
       x.domain(points.map(function(d) {
         return d.x;
       }));
-      var padding = d3.max(yData) * 0.20;
-
-      y.domain([d3.min(yData), d3.max(yData) + padding]);
+      setYAxisScale(y, yData);
 
       x0.domain(d3.range(yMaxPoints)).rangeRoundBands([0, x.rangeBand()]);
 
@@ -305,7 +345,7 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
 
       var yAxis = d3.svg.axis()
         .scale(y)
-        .orient("left")
+        .orient(config.yAxisOrientation)
         .ticks(10)
         .tickFormat(d3.format(config.yAxisTickFormat));
 
@@ -313,20 +353,9 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
        * Start drawing the chart!
        * @type {[type]}
        */
-      var svg = d3.select(chartContainer[0]).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-      svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
-
-      svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
+      var svg = createSvg(margin, yAxis.orient());
+      appendXAxis(svg, xAxis);
+      appendYAxis(svg, yAxis);
 
       /**
        * Add bars
@@ -455,7 +484,7 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
 
       var yAxis = d3.svg.axis()
         .scale(y)
-        .orient("left")
+        .orient(config.yAxisOrientation)
         .ticks(5)
         .tickFormat(d3.format(config.yAxisTickFormat));
 
@@ -499,24 +528,11 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
         linedata.push(d);
       });
 
-      var svg = d3.select(chartContainer[0]).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      setYAxisScale(y, yData);
 
-      var padding = d3.max(yData) * 0.20;
-
-      y.domain([d3.min(yData), d3.max(yData) + padding]);
-
-      svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
-
-      svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
+      var svg = createSvg(margin, yAxis.orient());
+      appendXAxis(svg, xAxis);
+      appendYAxis(svg, yAxis);
 
       var point = svg.selectAll(".points")
         .data(linedata)
@@ -680,7 +696,7 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
 
       var yAxis = d3.svg.axis()
         .scale(y)
-        .orient("left")
+        .orient(config.yAxisOrientation)
         .ticks(5)
         .tickFormat(d3.format(config.yAxisTickFormat));
 
@@ -729,24 +745,11 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
         linedata.push(d);
       });
 
-      var svg = d3.select(chartContainer[0]).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      setYAxisScale(y, yData);
 
-      var padding = d3.max(yData) * 0.20;
-
-      y.domain([d3.min(yData), d3.max(yData) + padding]);
-
-      svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
-
-      svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
+      var svg = createSvg(margin, yAxis.orient());
+      appendXAxis(svg, xAxis);
+      appendYAxis(svg, yAxis);
 
       var point = svg.selectAll(".points")
         .data(linedata)
@@ -928,7 +931,7 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
 
       var yAxis = d3.svg.axis()
         .scale(y)
-        .orient("left")
+        .orient(config.yAxisOrientation)
         .ticks(5)
         .tickFormat(d3.format(config.yAxisTickFormat));
 
@@ -963,24 +966,11 @@ angular.module('angularCharts').directive('acChart', function($templateCache, $c
         linedata.push(d);
       });
 
-      var svg = d3.select(chartContainer[0]).append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      setYAxisScale(y, yData);
 
-      var padding = d3.max(yData) * 0.20;
-
-      y.domain([d3.min(yData), d3.max(yData) + padding]);
-
-      svg.append("g")
-        .attr("class", "x axis")
-        .attr("transform", "translate(0," + height + ")")
-        .call(xAxis);
-
-      svg.append("g")
-        .attr("class", "y axis")
-        .call(yAxis);
+      var svg = createSvg(margin, yAxis.orient());
+      appendXAxis(svg, xAxis);
+      appendYAxis(svg, yAxis);
 
       svg.selectAll(".points")
         .data(linedata)

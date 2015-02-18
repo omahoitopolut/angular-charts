@@ -39,7 +39,7 @@ module.exports = function(grunt) {
         },
         files: {
           'build/right.min.html': 'src/templates/right.html',
-          'build/left.min.html': 'src/templates/left.html',
+          'build/left.min.html': 'src/templates/left.html'
         }
       }
     },
@@ -89,7 +89,7 @@ module.exports = function(grunt) {
             }
           ]
         }
-      },
+      }
     },
     copy: {
       bowerPreRelease: {
