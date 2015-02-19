@@ -37,7 +37,8 @@ function MainController($scope) {
 	$scope.chartType = 'bar';
 
 	$scope.config1 = {
-		labels: false,
+		labels: true,
+		labelsRelativeY: -10,
 		title: "Products",
 		legend: {
 			display: true,
@@ -53,7 +54,7 @@ function MainController($scope) {
 	};
 
 	$scope.config2 = {
-		labels: false,
+		labels: true,
 		title: "HTML-enabled legend",
 		legend: {
 			display: true,

@@ -82,6 +82,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
       title: '',
       tooltips: true,
       labels: false,
+      labelsRelativeY: 0,
       mouseover: function () {
       },
       mouseout: function () {
@@ -285,6 +286,16 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
         .call(yAxis);
     }
 
+    function getBarX(x0, i) {
+      var offset = 0;
+      if (i > 0) {
+        for (var idx = i; idx > 0; idx--) {
+          offset += getBarWidth(x0, idx - 1);
+        }
+      }
+      return x0(0) + offset;
+    }
+
     function getBarWidth(x0, i) {
       var width = null;
       if (i < config.barWidths.length) {
@@ -408,13 +419,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
       });
 
       bars.attr("x", function(d, i) {
-        var offset = 0;
-        if (i > 0) {
-          for (var idx = i; idx > 0; idx--) {
-            offset += getBarWidth(x0, idx - 1);
-          }
-        }
-        return x0(0) + offset;
+         return getBarX(x0, i);
       })
         .attr("y", height)
         .style("fill", function (d) {
@@ -468,11 +473,17 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
             return d.nicedata;
           })
           .enter().append("text")
+          .attr("class", "valueLabel")
+          .attr("text-anchor", "middle")
           .attr("x", function (d, i) {
-            return x0(i);
+            var barX = getBarX(x0, i);
+            var barWidth = getBarWidth(x0, i);
+            return barX + (barWidth / 2);
           })
           .attr("y", function (d) {
-            return height - Math.abs(y(d.y) - y(0));
+            var relativeY = config.labelsRelativeY;
+            var yValue = height - Math.abs(y(d.y) - y(0)) - relativeY;
+            return yValue >= height ? (height - 2) : yValue;
           })
           // .attr("transform", "rotate(270)")
           .text(function (d) {
@@ -662,6 +673,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
             .attr("y", function (d) {
               return y(d.y);
             })
+            .attr("class", "valueLabel")
             .text(function (d) {
               return d.y;
             });
@@ -921,6 +933,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
           .attr("transform", function (d) {
             return "translate(" + arc.centroid(d) + ")";
           })
+          .attr("class", "valueLabel")
           .attr("dy", ".35em")
           .style("text-anchor", "middle")
           .text(function (d) {
@@ -1067,6 +1080,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
             .attr("y", function (d) {
               return y(d.y);
             })
+            .attr("class", "valueLabel")
             .text(function (d) {
               return d.y;
             });
