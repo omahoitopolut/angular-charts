@@ -15,7 +15,7 @@ function MainController($scope) {
 			y: [351]
 		}, {
 			x: "Not Tax",
-			y: [54, 0, 879]
+			y: [54, 5, 879]
 		}]
 	};
 
@@ -32,7 +32,7 @@ function MainController($scope) {
 			x: "Expense",
 			y: [351, 50, 25]
 		}]
-	}
+	};
 
 	$scope.chartType = 'bar';
 
@@ -41,9 +41,15 @@ function MainController($scope) {
 		title: "Products",
 		legend: {
 			display: true,
-			position: 'left'
+			position: 'left',
+			htmlEnabled: true
 		},
-		innerRadius: 0
+		innerRadius: 0,
+		yAxisFixedScale: {min: 0, max: 100},
+		yAxisOrientation: "right",
+		colors: ['steelBlue', 'red', 'green'],
+		barWidths: [12],
+		animationDuration: 100
 	};
 
 	$scope.config2 = {
@@ -54,6 +60,14 @@ function MainController($scope) {
 			htmlEnabled: true,
 			position: 'right'
 		},
-		lineLegend: 'traditional'
-	}
+		lineLegend: 'traditional',
+		animationDuration: 500
+	};
+
+	$scope.switchConfig = function () {
+		$scope.config1.yAxisOrientation = "left";
+		$scope.config1.yAxisFixedScale.max = 1000;
+		$scope.config1.colors[0] = "gray";
+		$scope.config1.colors[1] = "pink";
+	};
 }
