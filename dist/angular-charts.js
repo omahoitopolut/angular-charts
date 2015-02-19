@@ -81,6 +81,8 @@ angular.module('angularCharts').directive('acChart', [
           title: '',
           tooltips: true,
           labels: false,
+          labelsRelativeY: 0,
+          labelUnit: '',
           mouseover: function () {
           },
           mouseout: function () {
@@ -97,8 +99,12 @@ angular.module('angularCharts').directive('acChart', [
           lineLegend: 'lineEnd',
           lineCurveType: 'cardinal',
           isAnimate: true,
+          animationDuration: 1000,
           yAxisTickFormat: 's',
-          waitForHeightAndWidth: false
+          waitForHeightAndWidth: false,
+          yAxisFixedScale: {},
+          yAxisOrientation: 'left',
+          barWidths: []
         };
       prepareConfig();
       var totalWidth = element[0].clientWidth;
@@ -117,6 +123,7 @@ angular.module('angularCharts').directive('acChart', [
         if (!validateHeightAndWidth()) {
           return;
         }
+        prepareConfig();
         prepareData();
         setHeightWidth();
         setContainers();
@@ -220,6 +227,64 @@ angular.module('angularCharts').directive('acChart', [
         }
       }
       /**
+     * Sets y axis scale. Using fixed scale if specified in config.
+     */
+      function setYAxisScale(y, yData) {
+        var scale = config.yAxisFixedScale;
+        if (angular.isUndefined(scale) || angular.isUndefined(scale.min) || angular.isUndefined(scale.max)) {
+          var padding = d3.max(yData) * 0.2;
+          y.domain([
+            d3.min(yData),
+            d3.max(yData) + padding
+          ]);
+        } else {
+          y.domain([
+            scale.min,
+            scale.max
+          ]);
+        }
+      }
+      function createSvg(margin, yAxisOrient) {
+        return d3.select(chartContainer[0]).append('svg').attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom).append('g').attr('transform', 'translate(' + (yAxisOrient === 'right' ? margin.right : margin.left) + ',' + margin.top + ')');
+      }
+      function appendXAxis(svg, xAxis) {
+        svg.append('g').attr('class', 'x axis').attr('transform', 'translate(0,' + height + ')').call(xAxis);
+      }
+      function appendYAxis(svg, yAxis) {
+        svg.append('g').attr('class', 'y axis').attr('transform', 'translate(' + (yAxis.orient() === 'right' ? width : 0) + ',0)').call(yAxis);
+      }
+      function getBarX(x0, i) {
+        var offset = 0;
+        if (i > 0) {
+          for (var idx = i; idx > 0; idx--) {
+            offset += getBarWidth(x0, idx - 1);
+          }
+        }
+        return x0(0) + offset;
+      }
+      function getBarWidth(x0, i) {
+        var width = null;
+        if (i < config.barWidths.length) {
+          return config.barWidths[i];
+        }
+        return width == null ? x0.rangeBand() : width;
+      }
+      function getBarGroupWidth(barCount, x0) {
+        var totalWidth = 0;
+        for (var i = 0; i < barCount; i++) {
+          totalWidth += getBarWidth(x0, i);
+        }
+        return totalWidth;
+      }
+      function calculateBarGroupXValue(x, d, x0) {
+        var barCount = d.nicedata.length;
+        var barGroupWidth = getBarGroupWidth(barCount, x0);
+        return x(d.x) + (x0.rangeBand() * barCount - barGroupWidth) / 2;
+      }
+      function getLabelText(value) {
+        return value + config.labelUnit;
+      }
+      /**
      * Draws a bar chart, grouped with negative value handling
      * @return {[type]} [description]
      */
@@ -267,11 +332,7 @@ angular.module('angularCharts').directive('acChart', [
         x.domain(points.map(function (d) {
           return d.x;
         }));
-        var padding = d3.max(yData) * 0.2;
-        y.domain([
-          d3.min(yData),
-          d3.max(yData) + padding
-        ]);
+        setYAxisScale(y, yData);
         x0.domain(d3.range(yMaxPoints)).rangeRoundBands([
           0,
           x.rangeBand()
@@ -282,30 +343,32 @@ angular.module('angularCharts').directive('acChart', [
        */
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
-        var yAxis = d3.svg.axis().scale(y).orient('left').ticks(10).tickFormat(d3.format(config.yAxisTickFormat));
+        var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(10).tickFormat(d3.format(config.yAxisTickFormat));
         /**
        * Start drawing the chart!
        * @type {[type]}
        */
-        var svg = d3.select(chartContainer[0]).append('svg').attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom).append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        svg.append('g').attr('class', 'x axis').attr('transform', 'translate(0,' + height + ')').call(xAxis);
-        svg.append('g').attr('class', 'y axis').call(yAxis);
+        var svg = createSvg(margin, yAxis.orient());
+        appendXAxis(svg, xAxis);
+        appendYAxis(svg, yAxis);
         /**
        * Add bars
        * @type {[type]}
        */
         var barGroups = svg.selectAll('.state').data(points).enter().append('g').attr('class', 'g').attr('transform', function (d) {
-            return 'translate(' + x(d.x) + ',0)';
+            return 'translate(' + calculateBarGroupXValue(x, d, x0) + ',0)';
           });
         var bars = barGroups.selectAll('rect').data(function (d) {
             return d.nicedata;
           }).enter().append('rect');
-        bars.attr('width', x0.rangeBand());
+        bars.attr('width', function (d) {
+          return getBarWidth(x0, d.s);
+        });
         bars.attr('x', function (d, i) {
-          return x0(i);
+          return getBarX(x0, i);
         }).attr('y', height).style('fill', function (d) {
           return getColor(d.s);
-        }).attr('height', 0).transition().ease('cubic-in-out').duration(config.isAnimate ? 1000 : 0).attr('y', function (d) {
+        }).attr('height', 0).transition().ease('cubic-in-out').duration(config.isAnimate ? config.animationDuration : 0).attr('y', function (d) {
           return y(Math.max(0, d.y));
         }).attr('height', function (d) {
           return Math.abs(y(d.y) - y(0));
@@ -339,12 +402,16 @@ angular.module('angularCharts').directive('acChart', [
         if (config.labels) {
           barGroups.selectAll('not-a-class').data(function (d) {
             return d.nicedata;
-          }).enter().append('text').attr('x', function (d, i) {
-            return x0(i);
+          }).enter().append('text').attr('class', 'valueLabel').attr('text-anchor', 'middle').attr('x', function (d, i) {
+            var barX = getBarX(x0, i);
+            var barWidth = getBarWidth(x0, i);
+            return barX + barWidth / 2;
           }).attr('y', function (d) {
-            return height - Math.abs(y(d.y) - y(0));
+            var relativeY = config.labelsRelativeY;
+            var yValue = height - Math.abs(y(d.y) - y(0)) - relativeY;
+            return yValue >= height ? height - 2 : yValue;
           }).text(function (d) {
-            return d.y;
+            return getLabelText(d.y);
           });
         }
         /**
@@ -377,7 +444,7 @@ angular.module('angularCharts').directive('acChart', [
           ]);
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
-        var yAxis = d3.svg.axis().scale(y).orient('left').ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
+        var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
         var line = d3.svg.line().interpolate(config.lineCurveType).x(function (d) {
             return getX(d.x);
           }).y(function (d) {
@@ -411,14 +478,10 @@ angular.module('angularCharts').directive('acChart', [
           });
           linedata.push(d);
         });
-        var svg = d3.select(chartContainer[0]).append('svg').attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom).append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        var padding = d3.max(yData) * 0.2;
-        y.domain([
-          d3.min(yData),
-          d3.max(yData) + padding
-        ]);
-        svg.append('g').attr('class', 'x axis').attr('transform', 'translate(0,' + height + ')').call(xAxis);
-        svg.append('g').attr('class', 'y axis').call(yAxis);
+        setYAxisScale(y, yData);
+        var svg = createSvg(margin, yAxis.orient());
+        appendXAxis(svg, xAxis);
+        appendYAxis(svg, yAxis);
         var point = svg.selectAll('.points').data(linedata).enter().append('g');
         var path = point.attr('points', 'points').append('path').attr('class', 'ac-line').style('stroke', function (d, i) {
             return getColor(i);
@@ -433,7 +496,7 @@ angular.module('angularCharts').directive('acChart', [
           var last = linedata[linedata.length - 1].values;
           if (last.length > 0) {
             var totalLength = path.node().getTotalLength() + getX(last[last.length - 1].x);
-            path.attr('stroke-dasharray', totalLength + ' ' + totalLength).attr('stroke-dashoffset', totalLength).transition().duration(config.isAnimate ? 1500 : 0).ease('linear').attr('stroke-dashoffset', 0).attr('d', function (d) {
+            path.attr('stroke-dasharray', totalLength + ' ' + totalLength).attr('stroke-dashoffset', totalLength).transition().duration(config.isAnimate ? config.animationDuration : 0).ease('linear').attr('stroke-dashoffset', 0).attr('d', function (d) {
               return line(d.values);
             });
           }
@@ -475,8 +538,8 @@ angular.module('angularCharts').directive('acChart', [
               return getX(d.x);
             }).attr('y', function (d) {
               return y(d.y);
-            }).text(function (d) {
-              return d.y;
+            }).attr('class', 'valueLabel').text(function (d) {
+              return getLabelText(d.y);
             });
           }
         });
@@ -530,7 +593,7 @@ angular.module('angularCharts').directive('acChart', [
           ]);
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
-        var yAxis = d3.svg.axis().scale(y).orient('left').ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
+        var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
         d3.svg.line().interpolate(config.lineCurveType).x(function (d) {
           return getX(d.x);
         }).y(function (d) {
@@ -567,14 +630,10 @@ angular.module('angularCharts').directive('acChart', [
           });
           linedata.push(d);
         });
-        var svg = d3.select(chartContainer[0]).append('svg').attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom).append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        var padding = d3.max(yData) * 0.2;
-        y.domain([
-          d3.min(yData),
-          d3.max(yData) + padding
-        ]);
-        svg.append('g').attr('class', 'x axis').attr('transform', 'translate(0,' + height + ')').call(xAxis);
-        svg.append('g').attr('class', 'y axis').call(yAxis);
+        setYAxisScale(y, yData);
+        var svg = createSvg(margin, yAxis.orient());
+        appendXAxis(svg, xAxis);
+        appendYAxis(svg, yAxis);
         var point = svg.selectAll('.points').data(linedata).enter().append('g');
         var area = d3.svg.area().interpolate('basis').x(function (d) {
             return getX(d.x);
@@ -621,7 +680,7 @@ angular.module('angularCharts').directive('acChart', [
         var complete = false;
         path.append('path').style('fill', function (d, i) {
           return getColor(i);
-        }).transition().ease('linear').duration(config.isAnimate ? 500 : 0).attrTween('d', tweenPie).attr('class', 'arc').each('end', function () {
+        }).transition().ease('linear').duration(config.isAnimate ? config.animationDuration : 0).attrTween('d', tweenPie).attr('class', 'arc').each('end', function () {
           //avoid firing multiple times
           if (!complete) {
             complete = true;
@@ -647,8 +706,8 @@ angular.module('angularCharts').directive('acChart', [
         if (!!config.labels) {
           path.append('text').attr('transform', function (d) {
             return 'translate(' + arc.centroid(d) + ')';
-          }).attr('dy', '.35em').style('text-anchor', 'middle').text(function (d) {
-            return d.data.y[0];
+          }).attr('class', 'valueLabel').attr('dy', '.35em').style('text-anchor', 'middle').text(function (d) {
+            return getLabelText(d.data.y[0]);
           });
         }
         function tweenPie(b) {
@@ -683,7 +742,7 @@ angular.module('angularCharts').directive('acChart', [
           ]);
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
-        var yAxis = d3.svg.axis().scale(y).orient('left').ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
+        var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
         var yData = [0];
         var linedata = [];
         points.forEach(function (d) {
@@ -711,14 +770,10 @@ angular.module('angularCharts').directive('acChart', [
           });
           linedata.push(d);
         });
-        var svg = d3.select(chartContainer[0]).append('svg').attr('width', width + margin.left + margin.right).attr('height', height + margin.top + margin.bottom).append('g').attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
-        var padding = d3.max(yData) * 0.2;
-        y.domain([
-          d3.min(yData),
-          d3.max(yData) + padding
-        ]);
-        svg.append('g').attr('class', 'x axis').attr('transform', 'translate(0,' + height + ')').call(xAxis);
-        svg.append('g').attr('class', 'y axis').call(yAxis);
+        setYAxisScale(y, yData);
+        var svg = createSvg(margin, yAxis.orient());
+        appendXAxis(svg, xAxis);
+        appendYAxis(svg, yAxis);
         svg.selectAll('.points').data(linedata).enter().append('g');
         /**
        * Add points
@@ -757,8 +812,8 @@ angular.module('angularCharts').directive('acChart', [
               return getX(d.x);
             }).attr('y', function (d) {
               return y(d.y);
-            }).text(function (d) {
-              return d.y;
+            }).attr('class', 'valueLabel').text(function (d) {
+              return getLabelText(d.y);
             });
           }
         });

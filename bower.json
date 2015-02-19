@@ -1,8 +1,8 @@
 {
   "name": "angular-charts",
-  "version": "0.2.6",
+  "version": "0.2.8-beta.1",
   "authors": [
-    "chinmaymk"
+    "vrouvinen"
   ],
   "description": "angular directives for common charts using d3",
   "keywords": [
