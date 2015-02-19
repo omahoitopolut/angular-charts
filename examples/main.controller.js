@@ -39,6 +39,7 @@ function MainController($scope) {
 	$scope.config1 = {
 		labels: true,
 		labelsRelativeY: -10,
+		labelUnit: "$",
 		title: "Products",
 		legend: {
 			display: true,

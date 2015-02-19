@@ -83,6 +83,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
       tooltips: true,
       labels: false,
       labelsRelativeY: 0,
+      labelUnit: "",
       mouseover: function () {
       },
       mouseout: function () {
@@ -318,6 +319,10 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
       return x(d.x) + ((x0.rangeBand() * barCount - barGroupWidth) / 2);
     }
 
+    function getLabelText(value) {
+      return value + config.labelUnit;
+    }
+
     /**
      * Draws a bar chart, grouped with negative value handling
      * @return {[type]} [description]
@@ -487,7 +492,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
           })
           // .attr("transform", "rotate(270)")
           .text(function (d) {
-            return d.y;
+            return getLabelText(d.y);
           });
       }
 
@@ -675,7 +680,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
             })
             .attr("class", "valueLabel")
             .text(function (d) {
-              return d.y;
+              return getLabelText(d.y);
             });
         }
       });
@@ -937,7 +942,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
           .attr("dy", ".35em")
           .style("text-anchor", "middle")
           .text(function (d) {
-            return d.data.y[0];
+            return getLabelText(d.data.y[0]);
           });
       }
 
@@ -1082,7 +1087,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
             })
             .attr("class", "valueLabel")
             .text(function (d) {
-              return d.y;
+              return getLabelText(d.y);
             });
         }
       });
