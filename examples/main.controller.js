@@ -47,6 +47,7 @@ function MainController($scope) {
 			htmlEnabled: true
 		},
 		innerRadius: 0,
+		yAxisGridLine: true,
 		yAxisFixedScale: {min: 0, max: 100},
 		yAxisOrientation: "right",
 		colors: ['steelBlue', 'red', 'green'],
