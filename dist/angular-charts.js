@@ -421,7 +421,7 @@ angular.module('angularCharts').directive('acChart', [
         /**
        * Draw one zero line in case negative values exist
        */
-        svg.append('line').attr('x1', width).attr('y1', y(0)).attr('y2', y(0)).style('stroke', 'silver');
+        svg.append('line').attr('class', 'zero-line').attr('x1', width).attr('y1', y(0)).attr('y2', y(0));
       }
       /**
      * Draws a line chart
