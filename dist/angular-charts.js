@@ -101,6 +101,7 @@ angular.module('angularCharts').directive('acChart', [
           isAnimate: true,
           animationDuration: 1000,
           yAxisTickFormat: 's',
+          yAxisGridLine: false,
           waitForHeightAndWidth: false,
           yAxisFixedScale: {},
           yAxisOrientation: 'left',
@@ -344,6 +345,9 @@ angular.module('angularCharts').directive('acChart', [
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
         var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(10).tickFormat(d3.format(config.yAxisTickFormat));
+        if (config.yAxisGridLine) {
+          yAxis.tickSize(-width);
+        }
         /**
        * Start drawing the chart!
        * @type {[type]}
@@ -445,6 +449,9 @@ angular.module('angularCharts').directive('acChart', [
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
         var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
+        if (config.yAxisGridLine) {
+          yAxis.tickSize(-width);
+        }
         var line = d3.svg.line().interpolate(config.lineCurveType).x(function (d) {
             return getX(d.x);
           }).y(function (d) {
@@ -594,6 +601,9 @@ angular.module('angularCharts').directive('acChart', [
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
         var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
+        if (config.yAxisGridLine) {
+          yAxis.tickSize(-width);
+        }
         d3.svg.line().interpolate(config.lineCurveType).x(function (d) {
           return getX(d.x);
         }).y(function (d) {
@@ -743,6 +753,9 @@ angular.module('angularCharts').directive('acChart', [
         var xAxis = d3.svg.axis().scale(x).orient('bottom');
         filterXAxis(xAxis, x);
         var yAxis = d3.svg.axis().scale(y).orient(config.yAxisOrientation).ticks(5).tickFormat(d3.format(config.yAxisTickFormat));
+        if (config.yAxisGridLine) {
+          yAxis.tickSize(-width);
+        }
         var yData = [0];
         var linedata = [];
         points.forEach(function (d) {
