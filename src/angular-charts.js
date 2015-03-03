@@ -314,10 +314,13 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
       return totalWidth;
     }
 
-    function calculateBarGroupXValue(x, d, x0) {
+    function calculateBarGroupXValue(x, d, x0, maxBarCount) {
       var barCount = d.nicedata.length;
       var barGroupWidth = getBarGroupWidth(barCount, x0);
-      return x(d.x) + ((x0.rangeBand() * barCount - barGroupWidth) / 2);
+      if (x0.rangeBand() === Number.POSITIVE_INFINITY) {
+        return 0;
+      }
+      return x(d.x) + ((x0.rangeBand() * maxBarCount - barGroupWidth) / 2);
     }
 
     function getLabelText(value) {
@@ -370,6 +373,10 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
         return d.y.length;
       }));
 
+      var maxBarCount = d3.max(points.map(function (d) {
+        return d.nicedata.length;
+      }));
+
       scope.yMaxData = yMaxPoints;
 
       x.domain(points.map(function (d) {
@@ -415,7 +422,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
         .enter().append("g")
         .attr("class", "g")
         .attr("transform", function (d) {
-          return "translate(" + calculateBarGroupXValue(x, d, x0) + ",0)";
+          return "translate(" + calculateBarGroupXValue(x, d, x0, maxBarCount) + ",0)";
         });
 
       var bars = barGroups.selectAll("rect")
