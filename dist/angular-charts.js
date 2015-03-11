@@ -377,7 +377,7 @@ angular.module('angularCharts').directive('acChart', [
         bars.attr('x', function (d, i) {
           return getBarX(x0, i);
         }).attr('y', height).style('fill', function (d) {
-          return getColor(d.s);
+          return getColor(d.s, d.x);
         }).attr('height', 0).transition().ease('cubic-in-out').duration(config.isAnimate ? config.animationDuration : 0).attr('y', function (d) {
           return y(Math.max(0, d.y));
         }).attr('height', function (d) {
@@ -928,12 +928,16 @@ angular.module('angularCharts').directive('acChart', [
      * @param  {[type]} i [description]
      * @return {[type]}   [description]
      */
-      function getColor(i) {
-        if (i < config.colors.length) {
-          return config.colors[i];
+      function getColor(i, x) {
+        var colors = config.colors;
+        if (colors[x] != undefined) {
+          colors = colors[x];
+        }
+        if (i < colors.length) {
+          return colors[i];
         } else {
           var color = getRandomColor();
-          config.colors.push(color);
+          colors.push(color);
           return color;
         }
       }
