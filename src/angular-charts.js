@@ -440,7 +440,7 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
       })
         .attr("y", height)
         .style("fill", function (d) {
-          return getColor(d.s);
+          return getColor(d.s, d.x);
         })
         .attr("height", 0)
         .transition()
@@ -1222,12 +1222,16 @@ angular.module('angularCharts').directive('acChart', function ($templateCache, $
      * @param  {[type]} i [description]
      * @return {[type]}   [description]
      */
-    function getColor(i) {
-      if (i < config.colors.length) {
-        return config.colors[i];
+    function getColor(i, x) {
+      var colors = config.colors;
+      if (colors[x] != undefined) {
+        colors = colors[x];
+      }
+      if (i < colors.length) {
+        return colors[i];
       } else {
         var color = getRandomColor();
-        config.colors.push(color);
+        colors.push(color);
         return color;
       }
     }

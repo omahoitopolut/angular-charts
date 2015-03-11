@@ -2,20 +2,13 @@ angular.module('example', ['angularCharts']);
 
 function MainController($scope) {
 	$scope.data1 = {
-		series: ['Sales', 'Income', '<i>Expense</i>', 'Laptops', 'Keyboards'],
+		series: [],
 		data: [{
 			x: "Sales",
-			y: [100, 500, 0],
-			tooltip: "this is tooltip"
+			y: [100, 500, 40]
 		}, {
 			x: "Not Sales",
 			y: [300, 100, 100]
-		}, {
-			x: "Tax",
-			y: [351]
-		}, {
-			x: "Not Tax",
-			y: [54, 5, 879]
 		}]
 	};
 
@@ -50,7 +43,7 @@ function MainController($scope) {
 		yAxisGridLine: true,
 		yAxisFixedScale: {min: 0, max: 100},
 		yAxisOrientation: "right",
-		colors: ['steelBlue', 'red', 'green'],
+		colors: {"Sales": ['steelBlue', 'red', 'green'], "Not Sales": ['silver', 'yellow', 'pink']},
 		barWidths: [12],
 		animationDuration: 100
 	};
